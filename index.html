@@ -30,19 +30,23 @@
       </div>
     </div>
 
-    <a-scene vr-mode-ui="enabled:false" renderer="colorManagement:true; physicallyCorrectLights:true;" embedded
-             arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled:false;" id="scene">
-      <a-marker preset="hiro" smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="2">
-        <a-entity id="installation" position="0 0 0" rotation="-90 0 0" scale="1 1 1">
-          <a-plane position="0 0 0" rotation="0 0 0" width="1" height="1"
-                   material="color:#222; opacity:0.6; transparent:true; metalness:0.1; roughness:0.9"></a-plane>
-          <a-entity id="swarm" position="0 0 0"></a-entity>
-          <a-entity light="type: ambient; intensity: 1.0"></a-entity>
-          <a-entity light="type: directional; intensity: 0.9" position="0 1 1"></a-entity>
-        </a-entity>
-      </a-marker>
-      <a-entity camera="active:true" ></a-entity>
-    </a-scene>
+    <button id="startBtn" class="btn" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9999;">
+  Запустить камеру
+</button>
+
+<a-scene id="scene" vr-mode-ui="enabled:false" renderer="colorManagement:true; physicallyCorrectLights:true;" embedded
+         arjs="trackingMethod: best; sourceType: camera; facingMode: environment; debugUIEnabled:false;" visible="false">
+  <a-marker preset="hiro" smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="2">
+    <a-entity id="installation" position="0 0 0" rotation="-90 0 0" scale="1 1 1">
+      <a-plane position="0 0 0" rotation="0 0 0" width="1" height="1"
+               material="color:#222; opacity:0.6; transparent:true; metalness:0.1; roughness:0.9"></a-plane>
+      <a-entity id="swarm" position="0 0 0"></a-entity>
+      <a-entity light="type: ambient; intensity: 1.0"></a-entity>
+      <a-entity light="type: directional; intensity: 0.9" position="0 1 1"></a-entity>
+    </a-entity>
+  </a-marker>
+  <a-entity camera="active:true" ></a-entity>
+</a-scene>
 
     <div class="footer">Если объект не появляется — подойди ближе и держи маркер ровно; размер 10–12 см работает лучше.</div>
 
@@ -77,6 +81,24 @@
         }
         swarm.setAttribute('animation__spin', 'property=rotation; to=0 360 0; dur=14000; easing=linear; loop=true');
       });
-    </script>
-  </body>
+      // iOS Safari иногда не стартует getUserMedia без явного жеста. Кнопка ниже запрашивает доступ
+  const startBtn = document.getElementById('startBtn');
+  const scene = document.getElementById('scene');
+  startBtn.addEventListener('click', async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no gum');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      // Освобождаем сразу — AR.js сам подхватит разрешение
+      stream.getTracks().forEach(t=>t.stop());
+      startBtn.style.display = 'none';
+      scene.setAttribute('visible', 'true');
+      // Переинициализация ар-сцены после разрешения камеры — для надёжности
+      setTimeout(()=>{ window.dispatchEvent(new Event('resize')); }, 200);
+    } catch(e){
+      alert('Не удалось открыть камеру. Проверь разрешение сайту на камеру в настройках браузера.');
+      console.error(e);
+    }
+  });
+</script>
+</body>
 </html>
