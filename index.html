@@ -3,76 +3,51 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Camera Test — Vercel</title>
+  <title>AR Box</title>
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.4/aframe/build/aframe-ar.min.js"></script>
   <style>
-    :root { color-scheme: dark light; }
-    html,body { margin:0; height:100%; font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#000; color:#fff; }
-    .wrap { min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:16px; }
-    video { width:92vw; max-width:720px; aspect-ratio: 9 / 16; background:#111; border-radius:12px; }
-    .row { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
-    button { padding:10px 14px; border-radius:10px; border:1px solid #444; background:#111; color:#fff; cursor:pointer; }
-    button:active { transform: translateY(1px); }
-    pre { max-width:92vw; white-space:pre-wrap; word-break:break-word; background:#111; padding:10px; border-radius:8px; }
-    small { opacity:.75 }
+    html,body { margin:0; height:100%; background:#000; }
+    .btn { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:9999;
+           padding:12px 18px; border-radius:10px; background:#111; color:#fff; border:1px solid #555; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h2>Camera Test</h2>
-    <video id="view" playsinline autoplay muted></video>
-
-    <div class="row">
-      <button id="start">Запустить камеру (тыловая)</button>
-      <button id="switch">Переключить фронт/тыл</button>
-      <button id="stop">Стоп</button>
-    </div>
-
-    <pre id="log">Готово. Нажми «Запустить камеру» и разреши доступ.</pre>
-    <small>Требуется HTTPS и явный жест пользователя — политика браузеров.  [oai_citation:4‡MDN Web Docs](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia?utm_source=chatgpt.com)</small>
-  </div>
+  <button id="start" class="btn">Запустить AR</button>
+  <div id="app"></div>
 
   <script>
-    const v = document.getElementById('view');
-    const log = document.getElementById('log');
-    const btnStart = document.getElementById('start');
-    const btnSwitch = document.getElementById('switch');
-    const btnStop = document.getElementById('stop');
+    const btn = document.getElementById('start');
+    const app = document.getElementById('app');
 
-    let stream = null;
-    let useFront = false;
+    btn.addEventListener('click', () => {
+      btn.style.display = 'none';
+      app.innerHTML = `
+        <a-scene embedded vr-mode-ui="enabled:false"
+                 renderer="colorManagement:true; physicallyCorrectLights:true;"
+                 arjs="trackingMethod: best; sourceType: webcam; facingMode: environment; debugUIEnabled:false;">
+          <a-marker preset="hiro">
+            <a-entity id="swarm"></a-entity>
+          </a-marker>
+          <a-entity camera></a-entity>
+        </a-scene>`;
 
-    function msg(s){ log.textContent = s; }
-
-    async function stopStream(){
-      if(stream){
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-        v.srcObject = null;
-      }
-    }
-
-    async function startStream(){
-      try{
-        await stopStream();
-        // iOS Safari: запуск только ПОСЛЕ клика. facingMode через ideal — мягкая попытка
-        const constraints = { video: { facingMode: { ideal: useFront ? 'user' : 'environment' } }, audio: false };
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        v.srcObject = stream;
-        msg('Камера запущена (' + (useFront?'фронтальная':'тыловая') + ').');
-      }catch(e){
-        msg('Ошибка: ' + e.name + ' — ' + e.message + '\n\nПроверь: HTTPS, разрешение сайту на камеру, открой в Safari/Chrome напрямую (не во встроенном браузере).');
-        console.error(e);
-      }
-    }
-
-    btnStart.addEventListener('click', startStream);
-    btnSwitch.addEventListener('click', () => { useFront = !useFront; startStream(); });
-    btnStop.addEventListener('click', stopStream);
-
-    // Фича-чек:
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      msg('Этот браузер не поддерживает getUserMedia. Открой страницу в Safari/Chrome на телефоне.'); // MDN: API поддержка/HTTPS. 
-    }
+      const scene = app.querySelector('a-scene');
+      scene.addEventListener('loaded', () => {
+        const swarm = scene.querySelector('#swarm');
+        const COUNT = 20;
+        for(let i=0;i<COUNT;i++){
+          const box=document.createElement('a-box');
+          box.setAttribute('depth',0.05);
+          box.setAttribute('height',0.2);
+          box.setAttribute('width',0.2);
+          const x=(i-COUNT/2)*0.08, y=Math.sin(i*0.5)*0.2+0.25, z=(Math.random()-0.5)*0.5;
+          box.setAttribute('position',`${x.toFixed(2)} ${y.toFixed(2)} ${z.toFixed(2)}`);
+          box.setAttribute('material','color: hsl('+(200+i*10)+',70%,70%); opacity:0.8; transparent:true');
+          swarm.appendChild(box);
+        }
+      });
+    });
   </script>
 </body>
 </html>
