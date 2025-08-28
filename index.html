@@ -8,94 +8,80 @@
     <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.4/aframe/build/aframe-ar.min.js"></script>
     <style>
       html,body { margin:0; padding:0; height:100%; background:#000; }
-      .ui { position: fixed; inset: 0 auto auto 0; right: 0; padding: 10px 12px; color:#fff;
-        font: 14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; z-index: 10; pointer-events: none; }
-      .row { display:flex; gap:10px; align-items:center; justify-content:center; pointer-events:auto; flex-wrap: wrap; }
+      .ui { position: fixed; left:0; right:0; top:0; padding:10px 12px; color:#fff;
+        font: 14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; z-index: 10; text-align:center;
+        background: linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,0)); }
       .badge { display:inline-block; padding:2px 6px; border:1px solid rgba(255,255,255,.35); border-radius:999px; font-size:12px; }
-      .btn { appearance:none; border:1px solid rgba(255,255,255,.35); background:#111; color:#fff; border-radius:10px; padding:8px 12px; cursor:pointer; }
+      .btn { appearance:none; border:1px solid rgba(255,255,255,.35); background:#111; color:#fff; border-radius:10px; padding:10px 14px; cursor:pointer; }
       .btn:active { transform: translateY(1px); }
+      .center { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:9999; }
       .footer { position: fixed; left:0; right:0; bottom:0; padding:10px 12px; color:#bbb; text-align:center; font-size:12px;
-        background: linear-gradient(0deg, rgba(0,0,0,.65), rgba(0,0,0,0)); z-index: 10; }
+        background: linear-gradient(0deg, rgba(0,0,0,.55), rgba(0,0,0,0)); z-index: 10; }
       a { color:#8fb9ff }
     </style>
   </head>
   <body>
     <div class="ui">
-      <div class="row" style="margin-bottom:8px">
-        <span>Наведи камеру на <span class="badge">HIRO</span>-маркер на чёрной коробке.</span>
-      </div>
-      <div class="row">
+      Наведи камеру на <span class="badge">HIRO</span>-маркер на чёрной коробке.
+      <div style="margin-top:8px;">
         <button class="btn" onclick="openMarker()">Открыть маркер HIRO</button>
         <button class="btn" onclick="goFullscreen()">Во весь экран</button>
+        <a class="btn" href="./cam-test.html" style="text-decoration:none">Проверка камеры</a>
       </div>
     </div>
 
-    <button id="startBtn" class="btn" style="position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9999;">
-  Запустить камеру
-</button>
-<div id="app"></div>
+    <!-- Стартовая кнопка (iOS требует явного жеста) -->
+    <button id="startBtn" class="btn center">Запустить камеру</button>
+
+    <div id="app"></div>
 
     <div class="footer">Если объект не появляется — подойди ближе и держи маркер ровно; размер 10–12 см работает лучше.</div>
 
     <script>
-      function openMarker(){
-        window.open('https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/HIRO.jpg','_blank');
-      }
-      function goFullscreen(){
-        const el = document.documentElement; (el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen||function(){})()
-      }
+      function openMarker(){ window.open('https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/HIRO.jpg','_blank'); }
+      function goFullscreen(){ const el=document.documentElement; (el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen||function(){})() }
 
-      document.addEventListener('DOMContentLoaded', () => {
-  // Ничего не создаём заранее — iOS требует явного жеста до инициализации камеры.
-});
-      // Стартуем AR-сцену ТОЛЬКО после клика — это критично для iOS Safari
-const startBtn = document.getElementById('startBtn');
-const app = document.getElementById('app');
-startBtn.addEventListener('click', () => {
-  startBtn.style.display = 'none';
-  // Динамически создаём <a-scene> после жеста пользователя
-  app.innerHTML = `
-    <a-scene id="scene" vr-mode-ui="enabled:false" embedded
-             renderer="colorManagement:true; physicallyCorrectLights:true;"
-             arjs="trackingMethod: best; sourceType: webcam; facingMode: environment; debugUIEnabled:false;">
-      <a-marker preset="hiro" smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="2">
-        <a-entity id="installation" position="0 0 0" rotation="-90 0 0" scale="1 1 1">
-          <a-plane position="0 0 0" rotation="0 0 0" width="1" height="1"
-                   material="color:#222; opacity:0.6; transparent:true; metalness:0.1; roughness:0.9"></a-plane>
-          <a-entity id="swarm" position="0 0 0"></a-entity>
-          <a-entity light="type: ambient; intensity: 1.0"></a-entity>
-          <a-entity light="type: directional; intensity: 0.9" position="0 1 1"></a-entity>
-        </a-entity>
-      </a-marker>
-      <a-entity camera="active:true"></a-entity>
-    </a-scene>`;
+      const startBtn = document.getElementById('startBtn');
+      const app = document.getElementById('app');
 
-  // как только DOM готов — наполняем "ленту" кубиков
-  const scene = document.getElementById('scene');
-  scene.addEventListener('loaded', () => {
-    const swarm = scene.querySelector('#swarm');
-    const COUNT = 36;
-    for (let i=0;i<COUNT;i++){
-      const box = document.createElement('a-box');
-      box.setAttribute('depth', 0.02);
-      box.setAttribute('height',0.22);
-      box.setAttribute('width', 0.22);
-      const x = (i-COUNT/2)*0.06;
-      const y = Math.sin(i*0.45)*0.20 + 0.25;
-      const z = (Math.random()-0.5)*0.55;
-      box.setAttribute('position', `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`);
-      const hue = 220 + Math.sin(i*0.3)*40;
-      const color = `hsl(${hue}, 70%, 75%)`;
-      box.setAttribute('material', `color:${color}; opacity:0.78; transparent:true; metalness:0.2; roughness:0.3`);
-      const dur1 = 1200 + Math.random()*1200;
-      const dur2 = 3000 + Math.random()*2500;
-      box.setAttribute('animation__float', `property=position; to=${x.toFixed(3)} ${(y+0.07).toFixed(3)} ${z.toFixed(3)}; dir=alternate; dur=${Math.floor(dur1)}; loop=true; easing=easeInOutSine`);
-      box.setAttribute('animation__rot', `property=rotation; to=${(Math.random()*180).toFixed(1)} ${(Math.random()*360).toFixed(1)} ${(Math.random()*180).toFixed(1)}; dur=${Math.floor(dur2)}; loop=true; easing=linear`);
-      swarm.appendChild(box);
-    }
-    swarm.setAttribute('animation__spin', 'property=rotation; to=0 360 0; dur=14000; easing=linear; loop=true');
-  });
-});
-</script>
-</body>
+      startBtn.addEventListener('click', () => {
+        startBtn.style.display='none';
+        // Создаём AR-сцену ДИНАМИЧЕСКИ после жеста: это важно для iOS
+        app.innerHTML = `
+          <a-scene id="scene" vr-mode-ui="enabled:false" embedded
+                   renderer="colorManagement:true; physicallyCorrectLights:true;"
+                   arjs="trackingMethod: best; sourceType: webcam; facingMode: environment; debugUIEnabled:false;">
+            <a-marker preset="hiro" smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="2">
+              <a-entity id="installation" position="0 0 0" rotation="-90 0 0" scale="1 1 1">
+                <a-plane position="0 0 0" rotation="0 0 0" width="1" height="1"
+                         material="color:#222; opacity:0.6; transparent:true; metalness:0.1; roughness:0.9"></a-plane>
+                <a-entity id="swarm" position="0 0 0"></a-entity>
+                <a-entity light="type: ambient; intensity: 1.0"></a-entity>
+                <a-entity light="type: directional; intensity: 0.9" position="0 1 1"></a-entity>
+              </a-entity>
+            </a-marker>
+            <a-entity camera="active:true"></a-entity>
+          </a-scene>`;
+
+        const scene = document.getElementById('scene');
+        scene.addEventListener('loaded', () => {
+          const swarm = scene.querySelector('#swarm');
+          const COUNT = 36;
+          for (let i=0;i<COUNT;i++){
+            const box = document.createElement('a-box');
+            box.setAttribute('depth',0.02); box.setAttribute('height',0.22); box.setAttribute('width',0.22);
+            const x=(i-COUNT/2)*0.06, y=Math.sin(i*0.45)*0.20+0.25, z=(Math.random()-0.5)*0.55;
+            box.setAttribute('position', `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`);
+            const hue=220+Math.sin(i*0.3)*40; const color=`hsl(${hue},70%,75%)`;
+            box.setAttribute('material', `color:${color}; opacity:0.78; transparent:true; metalness:0.2; roughness:0.3`);
+            const dur1=1200+Math.random()*1200, dur2=3000+Math.random()*2500;
+            box.setAttribute('animation__float', `property=position; to=${x.toFixed(3)} ${(y+0.07).toFixed(3)} ${z.toFixed(3)}; dir=alternate; dur=${Math.floor(dur1)}; loop=true; easing=easeInOutSine`);
+            box.setAttribute('animation__rot', `property=rotation; to=${(Math.random()*180).toFixed(1)} ${(Math.random()*360).toFixed(1)} ${(Math.random()*180).toFixed(1)}; dur=${Math.floor(dur2)}; loop=true; easing=linear`);
+            swarm.appendChild(box);
+          }
+          swarm.setAttribute('animation__spin', 'property=rotation; to=0 360 0; dur=14000; easing=linear; loop=true');
+        });
+      });
+    </script>
+  </body>
 </html>
